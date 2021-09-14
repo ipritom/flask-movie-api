@@ -62,7 +62,6 @@ def register():
         #add new user to the database
         db.session.add(new_user)
         db.session.commit()
-        # db.session.close()
         return jsonify({'message' : 'New User Created!'})
   
 @app.route('/user/<user_id>', methods=['PUT'])
