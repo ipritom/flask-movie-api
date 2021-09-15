@@ -6,11 +6,11 @@ Project Created: 14-09-2021
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 import uuid
+import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # from dev
 from models import db, User
-# from routes import *
 
 
 # configure flask app 
@@ -20,26 +20,30 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///movieapi.sqlite" #database lo
 # initialize the app for the use with this database setup
 db.init_app(app)
 
+#omdb apikye
+omdb_api_key='2a50a570'
 
+# default landing url
 @app.route('/')
 def index():
     return "Welcome to Movie API"
 
-#users page
-@app.route('/user/<user_id>', methods=['POST'])
-def get_one_users():
-    if request.method == "POST":
-        print("HELLO")
-        data = request.get_json()
-        print(data)
-        name = data['name']
-        print(name)
-        exists = db.session.query(db.exists().where(User.name == name)).scalar()
+# user url
+# @app.route('/user/<username>', methods=['POST'])
+# def get_one_users():
+#     if request.method == "POST":
+#         print("HELLO")
+#         data = request.get_json()
+#         print(data)
+#         name = data['name']
+#         print(name)
+#         exists = db.session.query(db.exists().where(User.name == name)).scalar()
 
-        return jsonify({'existance':exists})
+#         return jsonify({'existance':exists})
     
-    return jsonify({"message":"None"})
+#     return jsonify({"message":"None"})
 
+# users list url
 @app.route('/users',  methods=['GET'])
 def get_all_user():
     """Return Users List from Database"""
@@ -68,7 +72,7 @@ def login():
         
         if userExist and passMatch:
             session['username'] = username
-            return jsonify({"message":'valid'})
+            return jsonify({"message":f'Welcome {username}!'})
         else:
             return jsonify({"message":'invalid'})
 
@@ -79,7 +83,6 @@ def logout():
         return jsonify({"message":'Logged Out'})
     else:
         return jsonify({"message":'All Ready Logged Out'})
-
 
 
 @app.route('/register', methods=['POST'])
@@ -102,15 +105,48 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         return jsonify({'message' : 'New User Created!'})
+
+@app.route('/search', methods=['GET','POST'])
+def search():
+    if request.method=='POST':
+        # take movie name 
+        movie_name = request.form['movie_name']
+        # api url with api key
+        api_url = f'https://www.omdbapi.com/?t={movie_name}&apikey={omdb_api_key}'
+        # get response from omdb
+        omdb_response = requests.get(api_url)
+        
+        return omdb_response.json()
     
-  
+    return jsonify({"message":'invalid'})
+
+# @app.route('/add', methods=['GET','POST'])
+# def add():
+#     if request.method=='POST':
+#         # take movie name 
+#         movie_name = request.form['movie_name']
+#         # api url with api key
+#         api_url = f'https://www.omdbapi.com/?t={movie_name}&apikey={omdb_api_key}'
+#         # get response from omdb
+#         omdb_response = requests.get(api_url)
+        
+#         if 'Error' in omdb_response.json():
+#             return jsonify({"message":'Invalid movie name!'})
+        
+#         return omdb_response.json()
+    
+#     return jsonify({"message":'invalid'})
+
+
 @app.route('/user/<user_id>', methods=['PUT'])
 def promote_user():
     return ''
 
+
 @app.route('/user/<user_id>', methods=['DELETE'])
 def delete_user():
     return ''
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1',port=4455,debug=True)  # host and port are manually assigned 
