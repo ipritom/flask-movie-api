@@ -1,6 +1,6 @@
 # Flask Movie Api
 ---
-This is a template API using Flask and [OMDb API](https://www.omdbapi.com/). API testing is performend by [Postman](https://www.postman.com/)
+This is a template API using Flask and [OMDb API](https://www.omdbapi.com/). API testing is performend by [Postman](https://www.postman.com/).
 
 ## How to Use 
 In api folder run bellow line in terminal.
