@@ -3,9 +3,9 @@ Flask Based Movie API
 Project Created: 14-09-2021
 '''
 # from environmet
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate, history
+from flask_migrate import Migrate
 import uuid
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -22,7 +22,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///movieapi.sqlite" #database lo
 migrate = Migrate(app, db)
 db.init_app(app)
 
-#omdb apikye
+#omdb API Key (https://www.omdbapi.com/)
 omdb_api_key='2a50a570'
 
 # default landing url
@@ -32,7 +32,7 @@ def index():
 
 # user url
 @app.route('/user', methods=['GET'])
-def get_one_users():
+def get_one_user():
     if "username" in session:
         # initiate a message dictionary
         message = {}
@@ -71,6 +71,10 @@ def get_all_user():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """Login from a Form"""
+    # if a session is running already
+    if "username" in session:
+        return jsonify({"message":'You are already in! Hurrah!'})
+
     if request.method=='POST':
         # get username and password from request object
         username = request.form['username']
@@ -90,8 +94,10 @@ def login():
         else:
             return jsonify({"message":'invalid'})
 
+# user logout url
 @app.route('/logout', methods=['GET'])
 def logout():
+    """Logout Function"""
     if "username" in session:
         session.clear()
         return jsonify({"message":'Logged Out'})
@@ -99,27 +105,35 @@ def logout():
         return jsonify({"message":'All Ready Logged Out'})
 
 
-@app.route('/register', methods=['POST'])
+# new user register/signup url
+@app.route('/register', methods=['POST','GET'])
 def register():
+    # if a session is running already
+    if "user_id" in session:
+        return redirect(url_for('get_one_user'))
+
     if request.method == 'POST':
-        # getting data from request object
-        data = request.get_json()
+        # getting data from request form
+        username = request.form['username']
+        password = request.form['password']
         # checking existence
-        name = data['name']
-        exists = db.session.query(db.exists().where(User.name == name)).scalar()
+     
+        exists = db.session.query(db.exists().where(User.name == username)).scalar()
         # if user already exists return with message
         if exists:
             return jsonify({'message':"User Already Exists!"})
 
         # creating password hash
-        hashed_password = generate_password_hash(data['password'], method='sha256')
+        hashed_password = generate_password_hash(password, method='sha256')
         # create new user object
-        new_user = User(public_id=str(uuid.uuid4()), name=data['name'], password=hashed_password, admin=False)
+        new_user = User(public_id=str(uuid.uuid4()), name=username, password=hashed_password, admin=False)
         # add new user to the database
         db.session.add(new_user)
         db.session.commit()
+
         return jsonify({'message' : 'New User Created!'})
 
+# search movie with name by requesting OMDB API
 @app.route('/search', methods=['GET','POST'])
 def search():
     if request.method=='POST':
@@ -137,6 +151,7 @@ def search():
     
     return jsonify({"message":'invalid'})
 
+# add movie by user
 @app.route('/add', methods=['GET','POST'])
 def add():
     if request.method=='POST':
@@ -180,15 +195,6 @@ def add():
     
     return jsonify({"message":'invalid'})
 
-
-@app.route('/user/<user_id>', methods=['PUT'])
-def promote_user():
-    return ''
-
-
-@app.route('/user/<user_id>', methods=['DELETE'])
-def delete_user():
-    return ''
 
 
 if __name__ == '__main__':
