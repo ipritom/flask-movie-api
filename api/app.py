@@ -42,7 +42,7 @@ def get_one_user():
         # iterate over all movies
         for record in user_movies:
             movie = db.session.query(MovieRecord).filter(MovieRecord.id==record.movie_id).first()
-            message[str(movie.id)] = movie.title
+            message[str(record.id)] = movie.title #movie title with record id
         
         # return message with a greeting
         message["message"] = f"Hello {session['username']}!"
@@ -183,8 +183,6 @@ def add():
             db.session.add(new_record)
             db.session.flush()
             # saving movie id to user movie table
-            print("########### SANITY CHECK ################")
-            print(new_record.id)
             new_add = UserMovie(movie_id=new_record.id,user_id=user_id)
             db.session.add(new_add)
             # commit to database
@@ -195,6 +193,30 @@ def add():
     
     return jsonify({"message":'invalid'})
 
+# delete movie by user
+@app.route('/delete', methods=['GET','POST'])
+def delete():
+    """Function to delete a movie by record id given by user"""
+    # if a session is running already
+    if "user_id" not in session:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        record_id = request.form['record_id']
+        # existence of the record_id under the session user_id
+        exists = db.session.query(db.exists().where((UserMovie.user_id == session['user_id']) & 
+                                                    (UserMovie.id == record_id))).scalar()
+        
+        if exists:
+            db.session.query(UserMovie).filter(UserMovie.id==record_id).delete()
+            # commit to database
+            db.session.commit()
+            return jsonify({"message": "Movie Deleted"})
+        else:
+            return jsonify({'message':'There is no such movie in your list.'})
+
+        
+        
 
 
 if __name__ == '__main__':
