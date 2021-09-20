@@ -136,6 +136,8 @@ def register():
 # search movie with name by requesting OMDB API
 @app.route('/search', methods=['GET','POST'])
 def search():
+    """Function to search movie by a key movie_name"""
+    
     if request.method=='POST':
         # take movie name 
         movie_name = request.form['movie_name']
@@ -154,6 +156,12 @@ def search():
 # add movie by user
 @app.route('/add', methods=['GET','POST'])
 def add():
+    """Function to add a movie by search key given by user"""
+
+    # if no session is running
+    if "user_id" not in session:
+        return redirect(url_for('index'))
+
     if request.method=='POST':
         # take movie name 
         movie_name = request.form['movie_name']
@@ -188,16 +196,16 @@ def add():
             # commit to database
             db.session.commit()
 
-
             return omdb_response
     
     return jsonify({"message":'invalid'})
 
 # delete movie by user
-@app.route('/delete', methods=['GET','POST'])
+@app.route('/delete', methods=['POST'])
 def delete():
     """Function to delete a movie by record id given by user"""
-    # if a session is running already
+
+    # if no session is running
     if "user_id" not in session:
         return redirect(url_for('index'))
 
