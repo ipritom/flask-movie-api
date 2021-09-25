@@ -81,18 +81,26 @@ def login():
         password = request.form['password']
         # check user existence in DB and match password hash
         userExist = db.session.query(db.exists().where(User.name == username)).scalar()
-        passMatch = check_password_hash(generate_password_hash(password,method="sha256"),password)
-        
-        # if password and username match : create a session
-        if userExist and passMatch:
-            user_info = db.session.query(User).filter(User.name==username).first() 
-            session['admin'] = user_info.admin
-            session['user_id'] = user_info.id
-            session['username'] = username
-         
-            return jsonify({"message":f'Welcome {username}!'})
+        if userExist:
+            userData = db.session.query(User).filter(User.name==username).first()
+            passMatch = check_password_hash(userData.password,password)
+            if passMatch:
+                # fetching user data from User table
+                user_info = db.session.query(User).filter(User.name==username).first()
+                # creating session data
+                session['admin'] = user_info.admin
+                session['user_id'] = user_info.id
+                session['username'] = username
+                
+                return jsonify({"message":f'Welcome {username}!'})
+            else:
+                return jsonify({"message":"Password didn't mattch"})
+
         else:
-            return jsonify({"message":'invalid'})
+             return jsonify({"message": f"{username} doesn't exist."})
+
+            
+    return jsonify({"message":'invalid'})
 
 # user logout url
 @app.route('/logout', methods=['GET'])
